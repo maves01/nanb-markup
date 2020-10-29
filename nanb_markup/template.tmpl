@@ -1,0 +1,81 @@
+{%- macro format_heading(meta, in_list, in_table) -%}
+    {{meta.parameters.heading|format_heading-}}
+    {% for part in meta.body -%}
+        {{format_meta(part, in_list, in_table)-}}
+    {% endfor -%}
+{%- endmacro -%}
+{%- macro format_tagged(meta, in_list, in_table) -%}
+    [{{meta.parameters|format_parameters}}][{%- for part in meta.body -%}
+        {{format_meta(part, in_list, in_table)-}}
+    {%- endfor -%}]
+{%- endmacro -%}
+{%- macro format_inline(meta, in_list, in_table) -%}
+    {%- if meta.parameters|inline_needs_formatting -%}
+        {{- format_tagged(meta, in_list, in_table) -}}
+    {%- else -%}
+        {% for part in meta.body -%}
+            {{format_meta(part, in_list, in_table)-}}
+        {% endfor -%}
+    {%- endif -%}
+{%- endmacro -%}
+{%- macro format_list(meta, in_list, in_table) -%}
+    {%- if meta.parameters|list_has_parameters -%}
+        {{meta.parameters|list_format_parameters-}}
+    {% endif -%}
+    {%- if in_list|list_new_line -%}{{None|newline}}{%- endif -%}
+    {% for part in meta.body -%}
+        {{in_list|get_list_indentation}}{{format_meta(part, in_list, in_table)-}}{%- if not loop.last %}{{None|newline}}{%- endif -%}
+    {% endfor -%}
+{%- endmacro -%}
+{%- macro format_table(meta, in_list, in_table) -%}
+    {%- if meta.parameters|table_has_parameters -%}
+        {{meta.parameters|table_format_parameters-}}
+    {% endif -%}
+    {% for table_row in meta.body -%}
+      |{% for cell in table_row.body -%}
+            {% for part in cell.body -%}
+                {{format_meta(part, in_list, in_table)-}}
+            {% endfor -%}
+            {%- if not loop.last %}|{% endif -%}
+        {% endfor -%}|
+        {%- if not loop.last %}{{None|newline}}{% endif -%}
+    {% endfor -%}
+{%- endmacro -%}
+{%- macro format_block(meta, in_list, in_table) -%}
+    {%- if meta.parameters|block_has_parameters -%}
+{#    #}````{{meta.parameters|block_format_parameters-}}{{None|newline}}
+    {%- else -%}
+{#    #}````{{None|newline}}
+    {%- endif -%}
+    {% for part in meta.body -%}
+        {{-format_meta(part, in_list, in_table)-}}{%- if not loop.last %}{{None|newline}}{% endif -%}
+    {% endfor %}
+{##}````
+{%- endmacro -%}
+{%- macro format_rawblock(meta, in_list, in_table) -%}
+    {%- if meta.parameters|rawblock_has_parameters -%}
+{#    #}```{{meta.parameters|rawblock_format_parameters-}}{{None|newline}}
+    {%- else -%}
+{#    #}```{{None|newline}}
+    {%- endif -%}
+    {%- if meta.body.0 -%}{{ meta.body.0 }}{{None|newline}}{%- endif -%}
+{##}```
+{%- endmacro -%}
+{% macro format_meta(meta, in_list=-1, in_table=False) -%}
+    {% if meta is string -%}
+        {{meta|escape_special(in_table)-}}
+    {% elif 'heading' in meta.parameters -%}
+        {{format_heading(meta, in_list, in_table)-}}
+    {% elif 'list' in meta.parameters -%}
+        {{format_list(meta, in_list+1, in_table)-}}
+    {% elif 'table' in meta.parameters -%}
+        {{format_table(meta, in_list, True)-}}
+    {% elif 'block' in meta.parameters -%}
+        {{format_block(meta, in_list, in_table)-}}
+    {% elif 'rawblock' in meta.parameters -%}
+        {{format_rawblock(meta, in_list, in_table)-}}
+    {% else -%}
+        {{format_inline(meta, in_list, in_table)-}}
+    {% endif -%}
+{%- endmacro -%}
+{{-format_meta(meta)-}}
